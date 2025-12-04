@@ -259,6 +259,14 @@
 
             const totalNewGames = data.reduce((sum, item) => sum + item.newGames, 0);
             const totalChurned = data.reduce((sum, item) => sum + item.churnedGames, 0);
+            
+            // Percentage Split Calculations
+            const totalSetupRevenue = data.reduce((sum, item) => sum + item.splitSetup, 0);
+            const totalRecurringRevenue = data.reduce((sum, item) => sum + item.splitRecurring, 0);
+            const totalRevenueCombined = totalSetupRevenue + totalRecurringRevenue;
+            const percentSetup = totalRevenueCombined > 0 ? (totalSetupRevenue / totalRevenueCombined * 100).toFixed(1) : 0;
+            const percentRecurring = totalRevenueCombined > 0 ? (totalRecurringRevenue / totalRevenueCombined * 100).toFixed(1) : 0;
+
 
             return (
                 <div className="flex flex-col h-screen bg-slate-50 overflow-hidden text-slate-900">
@@ -385,6 +393,17 @@
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between"><span className="text-[#ff0249]">Blended LTV:</span><span className="font-bold text-slate-900">{formatCurrency(metrics.ltv)}</span></div>
                                     <div className="flex justify-between"><span className="text-[#ff0249]">Month 12 Rev:</span><span className="font-bold text-slate-900">{formatCurrency(metrics.mrrYear1)}</span></div>
+                                    <div className="border-t border-[#ff0249]/20 my-2 pt-2">
+                                        <h5 className="text-[#ff0249] text-xs font-semibold mb-1">Revenue Split (24 Mo)</h5>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-[#ff0249]">Setup Fees:</span>
+                                            <span className="font-bold text-slate-900">{percentSetup}%</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-[#ff0249]">Recurring:</span>
+                                            <span className="font-bold text-slate-900">{percentRecurring}%</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </aside>
