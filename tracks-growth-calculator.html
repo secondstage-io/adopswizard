@@ -78,17 +78,17 @@
             
             // Subsequent Pricing
             const [setupFeeSubsequent, setSetupFeeSubsequent] = useState(2000);
-            const [gracePeriodSubsequent, setGracePeriodSubsequent] = useState(0); // Assumed 0 based on "no further included month"
+            const [gracePeriodSubsequent, setGracePeriodSubsequent] = useState(0); 
             
             // Mix
-            const [subsequentMix, setSubsequentMix] = useState(20); // % of sales that are subsequent
+            const [subsequentMix, setSubsequentMix] = useState(20); 
             
             // General
             const [recurringFee, setRecurringFee] = useState(3000); 
             const [avgRetentionMonths, setAvgRetentionMonths] = useState(4);
             const [startingGames, setStartingGames] = useState(8);
             const [newGamesPerMonth, setNewGamesPerMonth] = useState(1);
-            const [growthRate, setGrowthRate] = useState(0); 
+            const [growthRate, setGrowthRate] = useState(5); 
 
             const [data, setData] = useState([]);
             const [metrics, setMetrics] = useState({
@@ -113,55 +113,55 @@
                 const blendedGracePeriod = (gracePeriodStandard * (1 - mixRate)) + (gracePeriodSubsequent * mixRate);
 
                 for (let month = 1; month <= 24; month++) {
-                    const activeNewGames = newGamesPerMonth * Math.pow(1 + (growthRate / 100), month - 1);
+                    // New Games (Rounded to Integer for realistic figures)
+                    const rawNewGames = newGamesPerMonth * Math.pow(1 + (growthRate / 100), month - 1);
+                    const activeNewGames = Math.round(rawNewGames);
                     
-                    // 1. Setup Revenue (Blended)
+                    // 1. Setup Revenue (Based on Integer New Games)
                     const revenueFromSetup = activeNewGames * blendedSetupFee;
 
-                    // 2. Recurring Revenue
-                    // We need to calculate how many games are currently in their "Free/Included" period.
-                    // Because 'blendedGracePeriod' might be a decimal (e.g. 1.5 months), we handle it proportionally.
+                    // 2. Recurring Revenue Logic
+                    // We must estimate how many games are in the grace period using rounded inputs to match the table
                     
                     // Games added this month (Age 0)
-                    // If blendedGrace is 1.5, then 100% of this month's games are free.
                     const graceFactorM0 = Math.min(1, Math.max(0, blendedGracePeriod));
                     const gamesInGraceM0 = activeNewGames * graceFactorM0;
 
-                    // Games added last month (Age 1) - need to account for churn
-                    const gamesAddedLastMonth = month > 1 ? (newGamesPerMonth * Math.pow(1 + (growthRate / 100), month - 2)) : 0;
-                    const gamesSurvivingM1 = gamesAddedLastMonth * (1 - churnRate);
-                    // If blendedGrace is 1.5, then 50% (1.5 - 1.0) of last month's games are still free.
+                    // Games added last month (Age 1)
+                    // We re-calculate the rounded previous months to keep consistency
+                    const rawPrev = month > 1 ? (newGamesPerMonth * Math.pow(1 + (growthRate / 100), month - 2)) : 0;
+                    const activePrev = Math.round(rawPrev);
+                    const gamesSurvivingM1 = activePrev * (1 - churnRate); 
                     const graceFactorM1 = Math.min(1, Math.max(0, blendedGracePeriod - 1));
                     const gamesInGraceM1 = gamesSurvivingM1 * graceFactorM1;
 
                     // Games added 2 months ago (Age 2)
-                    const gamesAdded2MonthsAgo = month > 2 ? (newGamesPerMonth * Math.pow(1 + (growthRate / 100), month - 3)) : 0;
-                    const gamesSurvivingM2 = gamesAdded2MonthsAgo * Math.pow((1 - churnRate), 2);
-                    // If blendedGrace is 2.5, then 50% of these are free. If 1.5, 0% are free.
+                    const rawPrev2 = month > 2 ? (newGamesPerMonth * Math.pow(1 + (growthRate / 100), month - 3)) : 0;
+                    const activePrev2 = Math.round(rawPrev2);
+                    const gamesSurvivingM2 = activePrev2 * Math.pow((1 - churnRate), 2);
                     const graceFactorM2 = Math.min(1, Math.max(0, blendedGracePeriod - 2));
                     const gamesInGraceM2 = gamesSurvivingM2 * graceFactorM2;
 
                     const totalGamesInGrace = gamesInGraceM0 + gamesInGraceM1 + gamesInGraceM2;
                     
-                    // Total Paying = Total Active - Total In Grace
-                    // Note: currentActive (at start of loop) doesn't include activeNewGames yet.
-                    // So Total Active Pool = currentActive + activeNewGames - Churn(calculated later). 
-                    // Let's use the pre-churn active count for revenue calc.
+                    // Total Active Pool (Pre-Churn)
                     const totalActivePool = currentActive + activeNewGames;
                     
-                    // We need to be careful not to subtract churned users from the grace pool double count.
-                    // Simplified: We take Total Pool and subtract the Calculated Grace Pool.
-                    let payingRecurringGames = totalActivePool - totalGamesInGrace;
+                    // Paying Games (Rounded to Integer)
+                    // We assume 'Starting Games' are mature and paying. 
+                    // We subtract the Calculated Grace Pool from the Total Pool.
+                    let payingRecurringGames = Math.round(totalActivePool - totalGamesInGrace);
                     
-                    // Safety: We assume 'startingGames' are mature and always pay.
-                    // But if calculated Paying < starting, we clamp.
                     if (payingRecurringGames < 0) payingRecurringGames = 0;
 
                     const revenueFromRecurring = payingRecurringGames * recurringFee;
                     const totalMonthlyRevenue = revenueFromSetup + revenueFromRecurring;
 
-                    // 3. Update Active Counts
-                    const churnedGames = currentActive * churnRate;
+                    // 3. Churn (Rounded to Integer)
+                    const rawChurn = currentActive * churnRate;
+                    const churnedGames = Math.round(rawChurn);
+                    
+                    // Update Active for next month
                     const previousActive = currentActive;
                     currentActive = previousActive + activeNewGames - churnedGames;
                     if (currentActive < 0) currentActive = 0;
@@ -170,9 +170,9 @@
 
                     calculatedData.push({
                         month,
-                        newGames: parseFloat(activeNewGames.toFixed(1)),
-                        churnedGames: parseFloat(churnedGames.toFixed(1)),
-                        activeGames: parseFloat(currentActive.toFixed(1)),
+                        newGames: activeNewGames,     // Now an Integer
+                        churnedGames: churnedGames,   // Now an Integer
+                        activeGames: currentActive,   // Now an Integer
                         revenue: Math.round(totalMonthlyRevenue),
                         splitSetup: Math.round(revenueFromSetup),
                         splitRecurring: Math.round(revenueFromRecurring),
@@ -215,6 +215,10 @@
                 document.body.removeChild(textArea);
                 alert("Data copied! You can paste this directly into Google Sheets.");
             };
+
+            // Totals Calculation for Footer
+            const totalNewGames = data.reduce((sum, item) => sum + item.newGames, 0);
+            const totalChurned = data.reduce((sum, item) => sum + item.churnedGames, 0);
 
             return (
                 <div className="flex flex-col h-screen bg-slate-50 overflow-hidden text-slate-900">
@@ -394,6 +398,17 @@
                                                 </tr>
                                             ))}
                                         </tbody>
+                                        {/* Added Summary Footer Row */}
+                                        <tfoot className="bg-slate-100 font-bold text-slate-700 border-t-2 border-slate-200">
+                                            <tr>
+                                                <td className="px-6 py-3">TOTAL (24 Mo)</td>
+                                                <td className="px-6 py-3 text-emerald-600">+{totalNewGames}</td>
+                                                <td className="px-6 py-3 text-red-500">-{totalChurned}</td>
+                                                <td className="px-6 py-3 text-slate-400">-</td>
+                                                <td className="px-6 py-3 text-slate-400">-</td>
+                                                <td className="px-6 py-3 text-slate-400">-</td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
