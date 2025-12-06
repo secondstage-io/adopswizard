@@ -237,6 +237,8 @@
                         month,
                         newGames: totalNewThisMonth,
                         churnedGames: churnedFlex + churnedFlat,
+                        churnedFlex: churnedFlex,
+                        churnedFlat: churnedFlat,
                         activeGames: currentActiveFlex + currentActiveFlat,
                         activeFlex: currentActiveFlex,
                         activeFlat: currentActiveFlat,
@@ -283,9 +285,9 @@
             };
 
             const copyToClipboard = () => {
-                const header = "Month,New Games,Total Active,Flex Active,Flat Active,Setup Rev,Flex Recurring Rev,Flat Recurring Rev,Total Rev,Cum. Rev\n";
+                const header = "Month,New Games,Total Churn,Active Flex,Churn Flex,Active Flat,Churn Flat,Total Active,Setup Rev,Flex Recurring Rev,Flat Recurring Rev,Total Rev,Cum. Rev\n";
                 const rows = data.map(row => 
-                    `${row.month},${row.newGames},${row.activeGames},${row.activeFlex},${row.activeFlat},${row.splitSetup},${row.splitFlexRecurring},${row.splitFlatRecurring},${row.revenue},${row.cumulativeRevenue}`
+                    `${row.month},${row.newGames},${row.churnedGames},${row.activeFlex},${row.churnedFlex},${row.activeFlat},${row.churnedFlat},${row.activeGames},${row.splitSetup},${row.splitFlexRecurring},${row.splitFlatRecurring},${row.revenue},${row.cumulativeRevenue}`
                 ).join("\n");
                 
                 const csvContent = header + rows;
@@ -300,6 +302,8 @@
 
             const totalNewGames = data.reduce((sum, item) => sum + item.newGames, 0);
             const totalChurned = data.reduce((sum, item) => sum + item.churnedGames, 0);
+            const totalChurnedFlex = data.reduce((sum, item) => sum + item.churnedFlex, 0);
+            const totalChurnedFlat = data.reduce((sum, item) => sum + item.churnedFlat, 0);
             
             const totalRev = metrics.totalRevenue;
             const percentSetup = totalRev > 0 ? (metrics.setupRevenue / totalRev * 100).toFixed(1) : 0;
@@ -527,8 +531,11 @@
                                             <tr>
                                                 <th className="px-6 py-3">Month</th>
                                                 <th className="px-6 py-3">New Games</th>
+                                                <th className="px-6 py-3 text-red-500">Churn Total</th>
                                                 <th className="px-6 py-3 font-bold text-[#ff0249]">Active Flex</th>
+                                                <th className="px-6 py-3 text-[#ff0249]">Churn Flex</th>
                                                 <th className="px-6 py-3 font-bold text-[#8b5cf6]">Active Flat</th>
+                                                <th className="px-6 py-3 text-[#8b5cf6]">Churn Flat</th>
                                                 <th className="px-6 py-3 font-bold text-slate-800">Total Active</th>
                                                 <th className="px-6 py-3 text-slate-700">Total Rev.</th>
                                                 <th className="px-6 py-3">Cum. Rev</th>
@@ -539,8 +546,11 @@
                                                 <tr key={row.month} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                                     <td className="px-6 py-3 font-medium text-slate-900">{row.month}</td>
                                                     <td className="px-6 py-3 text-emerald-600">+{row.newGames}</td>
+                                                    <td className="px-6 py-3 text-red-500">-{row.churnedGames}</td>
                                                     <td className="px-6 py-3 font-bold text-[#ff0249]">{row.activeFlex}</td>
+                                                    <td className="px-6 py-3 text-red-400">-{row.churnedFlex}</td>
                                                     <td className="px-6 py-3 font-bold text-[#8b5cf6]">{row.activeFlat}</td>
+                                                    <td className="px-6 py-3 text-red-400">-{row.churnedFlat}</td>
                                                     <td className="px-6 py-3 font-bold text-slate-800">{row.activeGames}</td>
                                                     <td className={`px-6 py-3 bg-[${BRAND_COLOR_LIGHT}] font-medium text-slate-900`}>{formatCurrency(row.revenue)}</td>
                                                     <td className="px-6 py-3 text-slate-500">{formatCurrency(row.cumulativeRevenue)}</td>
@@ -551,8 +561,11 @@
                                             <tr>
                                                 <td className="px-6 py-3">TOTAL (24 Mo)</td>
                                                 <td className="px-6 py-3 text-emerald-600">+{totalNewGames}</td>
+                                                <td className="px-6 py-3 text-red-500">-{totalChurned}</td>
                                                 <td className="px-6 py-3">-</td>
+                                                <td className="px-6 py-3 text-red-400">-{totalChurnedFlex}</td>
                                                 <td className="px-6 py-3">-</td>
+                                                <td className="px-6 py-3 text-red-400">-{totalChurnedFlat}</td>
                                                 <td className="px-6 py-3">-</td>
                                                 <td className="px-6 py-3 text-slate-800">{formatCurrency(metrics.totalRevenue)}</td>
                                                 <td className="px-6 py-3">-</td>
